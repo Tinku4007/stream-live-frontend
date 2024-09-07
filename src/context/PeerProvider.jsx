@@ -11,7 +11,7 @@ const PeerProvider = ({ children }) => {
     const remoteStreams = useRef(new Map());
 
     useEffect(() => {
-        const socketIo = io('http://localhost:3000');
+        const socketIo = io('https://strem-live.onrender.com');
         setSocket(socketIo);
 
         socketIo.on('connect', () => {
