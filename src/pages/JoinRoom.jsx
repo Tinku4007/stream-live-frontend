@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Room from '../components/Room';
 import { usePeer } from '../context/PeerProvider';
 
@@ -7,10 +7,10 @@ const JoinRoom = () => {
     const [joined, setJoined] = useState(false);
     const { socket } = usePeer();
 
-    const joinRoom = () => {
+    const joinRoom = useCallback(() => {
         socket.emit('join-room', roomId);
         setJoined(true);
-    };
+    }, [socket, roomId]);
 
     return (
         <div>

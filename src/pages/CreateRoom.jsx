@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import Room from '../components/Room';
 import { usePeer } from '../context/PeerProvider';
 
@@ -12,7 +12,7 @@ const CreateRoom = () => {
         }
     }, [socket]);
 
-    const createRoom = () => {
+    const createRoom = useCallback(() => {
         if (!socket) {
             console.error('Socket is not initialized');
             return;
@@ -22,7 +22,7 @@ const CreateRoom = () => {
         setRoomId(newRoomId);
         console.log(newRoomId, 'room id');
         socket.emit('create-room', newRoomId);
-    };
+    }, [socket]);
 
     return (
         <div>

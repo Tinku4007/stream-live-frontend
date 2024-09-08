@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useRef, useState, useEffect } from 'react';
+import React, { createContext, useContext, useRef, useState, useEffect, useCallback } from 'react';
 import io from 'socket.io-client';
 
 const PeerContext = createContext();
@@ -11,7 +11,7 @@ const PeerProvider = ({ children }) => {
     const remoteStreams = useRef(new Map());
 
     useEffect(() => {
-        const socketIo = io('https://strem-live.onrender.com');
+        const socketIo = io('http://localhost:3000/');
         setSocket(socketIo);
 
         socketIo.on('connect', () => {
@@ -27,7 +27,7 @@ const PeerProvider = ({ children }) => {
         };
     }, []);
 
-    const createOffer = async (roomId) => {
+    const createOffer = useCallback(async (roomId) => {
         if (!socket) {
             console.error('Socket is not initialized');
             return;
@@ -36,6 +36,7 @@ const PeerProvider = ({ children }) => {
         peerConnection.current = new RTCPeerConnection();
         peerConnection.current.onicecandidate = (event) => {
             if (event.candidate) {
+                console.log('Sending ICE candidate:', event.candidate);
                 socket.emit('ice-candidate', roomId, event.candidate);
             }
         };
@@ -44,6 +45,7 @@ const PeerProvider = ({ children }) => {
             const remoteStream = new MediaStream();
             remoteStream.addTrack(event.track);
             remoteStreams.current.set(roomId, remoteStream);
+            console.log('Sending stream:', remoteStream);
             socket.emit('stream', roomId, remoteStream);
         };
 
@@ -52,18 +54,22 @@ const PeerProvider = ({ children }) => {
 
         const offer = await peerConnection.current.createOffer();
         await peerConnection.current.setLocalDescription(offer);
+        console.log('Emitting offer:', offer);
         socket.emit('offer', roomId, offer);
-    };
+    }, [socket]);
 
-    const createAnswer = async (roomId, offer) => {
+    const createAnswer = useCallback(async (roomId, offer) => {
         if (!socket) {
             console.error('Socket is not initialized');
             return;
         }
 
+        console.log('Creating answer for room:', roomId);
+
         peerConnection.current = new RTCPeerConnection();
         peerConnection.current.onicecandidate = (event) => {
             if (event.candidate) {
+                console.log('Sending ICE candidate:', event.candidate);
                 socket.emit('ice-candidate', roomId, event.candidate);
             }
         };
@@ -72,47 +78,60 @@ const PeerProvider = ({ children }) => {
             const remoteStream = new MediaStream();
             remoteStream.addTrack(event.track);
             remoteStreams.current.set(roomId, remoteStream);
+            console.log('Sending stream:', remoteStream);
             socket.emit('stream', roomId, remoteStream);
         };
 
         await peerConnection.current.setRemoteDescription(new RTCSessionDescription(offer));
+        console.log('Offer set as remote description');
+        
         const answer = await peerConnection.current.createAnswer();
         await peerConnection.current.setLocalDescription(answer);
+        console.log('Emitting answer:', answer);
         socket.emit('answer', roomId, answer);
-    };
+    }, [socket]);
 
-    const addIceCandidate = (candidate) => {
+    const addIceCandidate = useCallback((candidate) => {
         if (peerConnection.current) {
             peerConnection.current.addIceCandidate(new RTCIceCandidate(candidate));
         }
-    };
+    }, []);
+
+    const handleOffer = useCallback((socketId, offer) => {
+        console.log('Received offer:', offer);
+        createAnswer(socketId, offer);
+    }, [createAnswer]);
+
+    const handleAnswer = useCallback((socketId, answer) => {
+        console.log('Received answer:', answer);
+        peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
+    }, []);
+
+    const handleIceCandidate = useCallback((socketId, candidate) => {
+        console.log('Received ICE candidate:', candidate);
+        addIceCandidate(candidate);
+    }, [addIceCandidate]);
+
+    const handleStream = useCallback((roomId, stream) => {
+        console.log('Received stream:', stream);
+        remoteStreams.current.set(roomId, stream);
+    }, []);
 
     useEffect(() => {
         if (!socket) return;
 
-        socket.on('offer', (socketId, offer) => {
-            createAnswer(socketId, offer);
-        });
-
-        socket.on('answer', (socketId, answer) => {
-            peerConnection.current.setRemoteDescription(new RTCSessionDescription(answer));
-        });
-
-        socket.on('ice-candidate', (socketId, candidate) => {
-            addIceCandidate(candidate);
-        });
-
-        socket.on('stream', (roomId, stream) => {
-            remoteStreams.current.set(roomId, stream);
-        });
+        socket.on('offer', handleOffer);
+        socket.on('answer', handleAnswer);
+        socket.on('ice-candidate', handleIceCandidate);
+        socket.on('stream', handleStream);
 
         return () => {
-            socket.off('offer');
-            socket.off('answer');
-            socket.off('ice-candidate');
-            socket.off('stream');
+            socket.off('offer', handleOffer);
+            socket.off('answer', handleAnswer);
+            socket.off('ice-candidate', handleIceCandidate);
+            socket.off('stream', handleStream);
         };
-    }, [socket]);
+    }, [socket, handleOffer, handleAnswer, handleIceCandidate, handleStream]);
 
     return (
         <PeerContext.Provider value={{ socket, createOffer, remoteStreams }}>

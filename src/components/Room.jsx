@@ -54,6 +54,8 @@ const Room = ({ roomId, isStreamer }) => {
         }
     }, [remoteStreams]);
 
+    
+
     console.log(remoteStreams , "remoteStreams")
 
     return (
