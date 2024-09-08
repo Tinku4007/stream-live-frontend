@@ -12,7 +12,7 @@ const PeerProvider = ({ children }) => {
     const peerConnection = useRef(null);
 
     useEffect(() => {
-        const socketIo = io('http://localhost:3000/');
+        const socketIo = io('https://strem-live.onrender.com');
         setSocket(socketIo);
 
         socketIo.on('connect', () => {
@@ -154,3 +154,4 @@ const PeerProvider = ({ children }) => {
 };
 
 export default PeerProvider;
+x`x`
