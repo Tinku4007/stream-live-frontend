@@ -7,8 +7,9 @@ export const usePeer = () => useContext(PeerContext);
 
 const PeerProvider = ({ children }) => {
     const [socket, setSocket] = useState(null);
+    const [remoteStreams, setRemoteStreams] = useState(new Map());
+
     const peerConnection = useRef(null);
-    const remoteStreams = useRef(new Map());
 
     useEffect(() => {
         const socketIo = io('http://localhost:3000/');
@@ -44,7 +45,11 @@ const PeerProvider = ({ children }) => {
         peerConnection.current.ontrack = (event) => {
             const remoteStream = new MediaStream();
             remoteStream.addTrack(event.track);
-            remoteStreams.current.set(roomId, remoteStream);
+            setRemoteStreams(prev => {
+                const updatedStreams = new Map(prev);
+                updatedStreams.set(roomId, remoteStream);
+                return updatedStreams;
+            });
             console.log('Sending stream:', remoteStream);
             socket.emit('stream', roomId, remoteStream);
         };
@@ -77,7 +82,11 @@ const PeerProvider = ({ children }) => {
         peerConnection.current.ontrack = (event) => {
             const remoteStream = new MediaStream();
             remoteStream.addTrack(event.track);
-            remoteStreams.current.set(roomId, remoteStream);
+            setRemoteStreams(prev => {
+                const updatedStreams = new Map(prev);
+                updatedStreams.set(roomId, remoteStream);
+                return updatedStreams;
+            });
             console.log('Sending stream:', remoteStream);
             socket.emit('stream', roomId, remoteStream);
         };
@@ -114,7 +123,11 @@ const PeerProvider = ({ children }) => {
 
     const handleStream = useCallback((roomId, stream) => {
         console.log('Received stream:', stream);
-        remoteStreams.current.set(roomId, stream);
+        setRemoteStreams(prev => {
+            const updatedStreams = new Map(prev);
+            updatedStreams.set(roomId, stream);
+            return updatedStreams;
+        });
     }, []);
 
     useEffect(() => {

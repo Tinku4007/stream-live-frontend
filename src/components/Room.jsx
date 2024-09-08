@@ -38,7 +38,7 @@ const Room = ({ roomId, isStreamer }) => {
         if (remoteVideosRef.current) {
             remoteVideosRef.current.innerHTML = ''; // Clear previous remote videos
 
-            remoteStreams.current.forEach((remoteStream, id) => {
+            remoteStreams.forEach((remoteStream, id) => {
                 let video = document.querySelector(`#video-${id}`);
                 if (!video) {
                     video = document.createElement('video');
@@ -53,10 +53,6 @@ const Room = ({ roomId, isStreamer }) => {
             });
         }
     }, [remoteStreams]);
-
-    
-
-    console.log(remoteStreams , "remoteStreams")
 
     return (
         <div>
