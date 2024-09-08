@@ -34,6 +34,9 @@ const Room = ({ roomId, isStreamer }) => {
         }
     }, [stream]);
 
+
+    
+
     useEffect(() => {
         if (remoteVideosRef.current) {
             remoteVideosRef.current.innerHTML = ''; // Clear previous remote videos
