@@ -54,6 +54,8 @@ const Room = ({ roomId, isStreamer }) => {
         }
     }, [remoteStreams]);
 
+    console.log(remoteStreams , "remoteStreams")
+
     return (
         <div>
             {isStreamer && <video ref={localVideoRef} autoPlay playsInline muted style={{ width: '100%', height: 'auto' }} />}
